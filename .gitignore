@@ -1,0 +1,9 @@
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+release/
+音频处理工具.exe
+*.bat
+封面.jpg
