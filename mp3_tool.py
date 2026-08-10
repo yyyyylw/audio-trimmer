@@ -57,6 +57,13 @@ EQ_BANDS = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
 # ═══════════════════════════════════════════════════════════════════
 
 def _find_ffmpeg_dir() -> str | None:
+    # 1. 程序同目录下的 ffmpeg 子文件夹 (打包时最优先)
+    app_dir = SCRIPT_DIR
+    bundled = app_dir / "ffmpeg" / "ffmpeg.exe"
+    if bundled.exists():
+        return str(bundled.parent)
+
+    # 2. 常见安装位置
     candidates = [
         r"D:\ffmpeg", r"C:\ffmpeg", r"C:\Program Files\ffmpeg",
         os.path.expandvars(r"%LOCALAPPDATA%\ffmpeg"),
@@ -87,8 +94,9 @@ def _setup_ffmpeg() -> None:
         os.environ["PATH"] = found + os.pathsep + os.environ.get("PATH", "")
         return
     sys.exit(
-        "错误: 找不到 ffmpeg。请安装 ffmpeg 并加入 PATH，\n"
-        "或设置环境变量 FFMPEG_PATH 指向 ffmpeg 的 bin 目录。"
+        "错误: 找不到 ffmpeg。请将 ffmpeg.exe、ffprobe.exe、ffplay.exe\n"
+        "放入程序同目录下的 ffmpeg 文件夹中。\n"
+        "下载地址: https://ffmpeg.org/download.html"
     )
 
 
