@@ -404,19 +404,31 @@ class AudioToolGUI:
 
         # ── 底部控制栏 ──
         bottom = ttk.Frame(main)
-        bottom.pack(fill=tk.X)
+        bottom.pack(fill=tk.X, pady=(4, 0))
+
+        sep = ttk.Separator(bottom, orient=tk.HORIZONTAL)
+        sep.pack(fill=tk.X, pady=(0, 6))
 
         self._progress = ttk.Progressbar(bottom, mode="determinate")
-        self._progress.pack(fill=tk.X, pady=(0, 6))
+        self._progress.pack(fill=tk.X, pady=(0, 8))
 
         btn_frame = ttk.Frame(bottom)
         btn_frame.pack(fill=tk.X)
-        self._start_btn = ttk.Button(btn_frame, text="开始处理", command=self._start)
-        self._start_btn.pack(side=tk.LEFT, padx=(0, 4))
-        self._stop_btn = ttk.Button(btn_frame, text="停止", command=self._stop,
+
+        # 风格化开始按钮 (绿色，加粗)
+        style = ttk.Style()
+        style.configure("Start.TButton", font=("Microsoft YaHei UI", 11, "bold"))
+        style.map("Start.TButton",
+                   background=[("active", "#4CAF50"), ("!disabled", "#4CAF50")],
+                   foreground=[("active", "white"), ("!disabled", "white")])
+
+        self._start_btn = ttk.Button(btn_frame, text="▶  开 始 处 理",
+                                      command=self._start, style="Start.TButton")
+        self._start_btn.pack(side=tk.LEFT, padx=(0, 8), ipadx=16, ipady=4)
+        self._stop_btn = ttk.Button(btn_frame, text="■ 停止", command=self._stop,
                                      state=tk.DISABLED)
-        self._stop_btn.pack(side=tk.LEFT, padx=(0, 4))
-        self._preview_btn = ttk.Button(btn_frame, text="预览", command=self._preview)
+        self._stop_btn.pack(side=tk.LEFT, padx=(0, 8))
+        self._preview_btn = ttk.Button(btn_frame, text="♪ 预览", command=self._preview)
         self._preview_btn.pack(side=tk.LEFT)
         ttk.Label(btn_frame, text=f"v{VERSION}", foreground="gray").pack(side=tk.RIGHT)
 
