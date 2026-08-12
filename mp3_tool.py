@@ -119,6 +119,23 @@ def get_duration(input_path: str) -> float:
     return float(info["format"]["duration"])
 
 
+def _get_audio_bitrate(input_path: str) -> int | None:
+    """获取音频流的比特率 (kbps)。"""
+    result = subprocess.run(
+        ["ffprobe", "-v", "quiet", "-print_format", "json",
+         "-show_streams", "-select_streams", "a:0", input_path],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        info = json.loads(result.stdout)
+        br = info["streams"][0].get("bit_rate", "0")
+        return int(br) // 1000 if br and br != "N/A" else None
+    except (json.JSONDecodeError, KeyError, IndexError, ValueError):
+        return None
+
+
 def process_file(
     input_path: str,
     output_path: str,
@@ -186,7 +203,9 @@ def process_file(
 
     cmd = ["ffmpeg", "-y", "-vn", "-i", input_path, "-af", filter_str]
     if fmt["bitrate"]:
-        cmd += ["-c:a", fmt["codec"], "-b:a", fmt["bitrate"]]
+        # 自动匹配源文件比特率
+        src_br = _get_audio_bitrate(input_path) or int(fmt["bitrate"].replace("k", ""))
+        cmd += ["-c:a", fmt["codec"], "-b:a", f"{src_br}k"]
     else:
         cmd += ["-c:a", fmt["codec"]]
     cmd.append(output_path)
@@ -331,9 +350,9 @@ class AudioToolGUI:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title(f"音频处理工具 v{VERSION}")
-        self.root.geometry("760x740")
+        self.root.geometry("700x620")
         self.root.resizable(True, True)
-        self.root.minsize(640, 640)
+        self.root.minsize(600, 560)
 
         self._drag_files: list[str] = []
         self._cancel = threading.Event()
@@ -395,7 +414,7 @@ class AudioToolGUI:
         # ── 日志 ──
         log_frame = ttk.LabelFrame(main, text="日志", padding=4)
         log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 6))
-        self._log_text = tk.Text(log_frame, height=6, state=tk.DISABLED, wrap=tk.WORD,
+        self._log_text = tk.Text(log_frame, height=5, state=tk.DISABLED, wrap=tk.WORD,
                                   font=("Consolas", 9))
         log_scroll = ttk.Scrollbar(log_frame, command=self._log_text.yview)
         self._log_text.configure(yscrollcommand=log_scroll.set)
@@ -403,31 +422,30 @@ class AudioToolGUI:
         log_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
         # ── 底部控制栏 ──
-        bottom = ttk.Frame(main)
-        bottom.pack(fill=tk.X, pady=(4, 0))
+        sep = ttk.Separator(main, orient=tk.HORIZONTAL)
+        sep.pack(fill=tk.X, pady=(2, 6))
 
-        sep = ttk.Separator(bottom, orient=tk.HORIZONTAL)
-        sep.pack(fill=tk.X, pady=(0, 6))
+        self._progress = ttk.Progressbar(main, mode="determinate")
+        self._progress.pack(fill=tk.X, pady=(0, 6))
 
-        self._progress = ttk.Progressbar(bottom, mode="determinate")
-        self._progress.pack(fill=tk.X, pady=(0, 8))
-
-        btn_frame = ttk.Frame(bottom)
+        btn_frame = tk.Frame(main, bg="#f0f0f0")
         btn_frame.pack(fill=tk.X)
 
-        # 风格化开始按钮 (绿色，加粗)
-        style = ttk.Style()
-        style.configure("Start.TButton", font=("Microsoft YaHei UI", 11, "bold"))
-        style.map("Start.TButton",
-                   background=[("active", "#4CAF50"), ("!disabled", "#4CAF50")],
-                   foreground=[("active", "white"), ("!disabled", "white")])
+        # 开始按钮: 用 tk.Button 才能设置真正的背景色
+        self._start_btn = tk.Button(
+            btn_frame, text="▶  开 始 处 理",
+            font=("Microsoft YaHei UI", 12, "bold"),
+            fg="white", bg="#4CAF50", activebackground="#388E3C",
+            activeforeground="white",
+            relief=tk.RAISED, bd=0, padx=30, pady=8,
+            cursor="hand2",
+            command=self._start,
+        )
+        self._start_btn.pack(side=tk.LEFT, padx=(0, 10))
 
-        self._start_btn = ttk.Button(btn_frame, text="▶  开 始 处 理",
-                                      command=self._start, style="Start.TButton")
-        self._start_btn.pack(side=tk.LEFT, padx=(0, 8), ipadx=16, ipady=4)
         self._stop_btn = ttk.Button(btn_frame, text="■ 停止", command=self._stop,
                                      state=tk.DISABLED)
-        self._stop_btn.pack(side=tk.LEFT, padx=(0, 8))
+        self._stop_btn.pack(side=tk.LEFT, padx=(0, 10))
         self._preview_btn = ttk.Button(btn_frame, text="♪ 预览", command=self._preview)
         self._preview_btn.pack(side=tk.LEFT)
         ttk.Label(btn_frame, text=f"v{VERSION}", foreground="gray").pack(side=tk.RIGHT)
