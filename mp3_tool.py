@@ -411,17 +411,7 @@ class AudioToolGUI:
         self._build_eq_tab()
         self._build_output_tab()
 
-        # ── 日志 ──
-        log_frame = ttk.LabelFrame(main, text="日志", padding=4)
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 6))
-        self._log_text = tk.Text(log_frame, height=5, state=tk.DISABLED, wrap=tk.WORD,
-                                  font=("Consolas", 9))
-        log_scroll = ttk.Scrollbar(log_frame, command=self._log_text.yview)
-        self._log_text.configure(yscrollcommand=log_scroll.set)
-        self._log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        log_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # ── 底部控制栏 ──
+        # ── 控制栏 (固定: 紧跟设置区，窗口小时不被挤出屏幕) ──
         sep = ttk.Separator(main, orient=tk.HORIZONTAL)
         sep.pack(fill=tk.X, pady=(2, 6))
 
@@ -449,6 +439,16 @@ class AudioToolGUI:
         self._preview_btn = ttk.Button(btn_frame, text="♪ 预览", command=self._preview)
         self._preview_btn.pack(side=tk.LEFT)
         ttk.Label(btn_frame, text=f"v{VERSION}", foreground="gray").pack(side=tk.RIGHT)
+
+        # ── 日志 (最后 pack: 窗口小时这部分被压缩) ──
+        log_frame = ttk.LabelFrame(main, text="日志", padding=4)
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=(6, 0))
+        self._log_text = tk.Text(log_frame, height=5, state=tk.DISABLED, wrap=tk.WORD,
+                                  font=("Consolas", 9))
+        log_scroll = ttk.Scrollbar(log_frame, command=self._log_text.yview)
+        self._log_text.configure(yscrollcommand=log_scroll.set)
+        self._log_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        log_scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
     # ── Tab 1: 裁剪 ──
 
@@ -575,7 +575,7 @@ class AudioToolGUI:
             var = tk.DoubleVar(value=0.0)
             self._eq_vars[freq] = var
             scale = ttk.Scale(col, from_=12, to=-12, variable=var,
-                               orient=tk.VERTICAL, length=140,
+                               orient=tk.VERTICAL, length=110,
                                command=lambda v, f=freq: self._on_eq_change(f, v))
             scale.pack()
 
